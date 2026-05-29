@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NEXUS — E-Commerce Platform</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#0a0a0f;--bg2:#12121a;--bg3:#1a1a26;--card:#1e1e2e;--border:#2a2a3e;--accent:#6c63ff;--accent2:#ff6b9d;--accent3:#00d9b4;--text:#e8e8f0;--muted:#888899;--danger:#ff4757;--success:#00d9b4;--warning:#ffa502}
+html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:14px}
+.app{display:flex;flex-direction:column;min-height:100vh}
+header{background:var(--bg2);border-bottom:1px solid var(--border);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.logo{font-size:20px;font-weight:800;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:-0.5px}
+.nav{display:flex;gap:4px;align-items:center}
+.nav-btn{background:none;border:none;color:var(--muted);padding:7px 13px;border-radius:7px;cursor:pointer;font-size:13px;transition:all .2s;display:flex;align-items:center;gap:5px}
+.nav-btn:hover,.nav-btn.active{background:var(--bg3);color:var(--text)}
+.nav-btn.active{color:var(--accent)}
+.badge{background:var(--accent2);color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;font-weight:700;margin-left:2px}
+.main{display:flex;flex:1}
+.sidebar{width:210px;background:var(--bg2);border-right:1px solid var(--border);padding:16px 12px;display:flex;flex-direction:column;gap:3px;flex-shrink:0}
+.sidebar-section{font-size:11px;color:var(--muted);margin:10px 0 5px 10px;letter-spacing:.6px;text-transform:uppercase}
+.sidebar-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:7px;cursor:pointer;color:var(--muted);font-size:13px;transition:all .2s;border:none;background:none;text-align:left;width:100%}
+.sidebar-item:hover{background:var(--bg3);color:var(--text)}
+.sidebar-item.active{background:rgba(108,99,255,.15);color:var(--accent);border-left:2px solid var(--accent)}
+.content{flex:1;padding:22px;overflow-y:auto;height:calc(100vh - 57px)}
+.page{display:none}
+.page.active{display:block}
+.page-title{font-size:20px;font-weight:700;margin-bottom:18px;display:flex;align-items:center;gap:8px}
+.grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.grid-4{display:grid;grid-template-columns:repeat(auto-fill,minmax(185px,1fr));gap:14px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:11px;padding:16px}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:11px;padding:16px}
+.stat-val{font-size:26px;font-weight:700;margin-top:4px}
+.stat-lbl{font-size:12px;color:var(--muted)}
+.stat-up{font-size:11px;color:var(--success);margin-top:3px}
+.product-card{background:var(--card);border:1px solid var(--border);border-radius:11px;overflow:hidden;transition:transform .2s,border-color .2s}
+.product-card:hover{transform:translateY(-2px);border-color:var(--accent)}
+.product-img{height:120px;display:flex;align-items:center;justify-content:center;font-size:42px;background:var(--bg3)}
+.product-info{padding:13px}
+.product-name{font-weight:600;font-size:13px;margin-bottom:3px}
+.product-cat{color:var(--muted);font-size:11px;margin-bottom:7px}
+.product-stock{font-size:11px;margin-bottom:9px}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:7px;border:none;cursor:pointer;font-size:13px;font-weight:500;transition:all .2s}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{background:#5a52e0}
+.btn-danger{background:rgba(255,71,87,.15);color:var(--danger);border:1px solid rgba(255,71,87,.25)}
+.btn-danger:hover{background:var(--danger);color:#fff}
+.btn-sm{padding:5px 10px;font-size:12px}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--text)}
+.btn-outline:hover{border-color:var(--accent);color:var(--accent)}
+.btn-success{background:var(--success);color:#000;font-weight:600}
+.btn-success:hover{opacity:.9}
+.btn-full{width:100%;justify-content:center}
+input,select,textarea{background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:7px;font-size:13px;width:100%;outline:none;transition:border .2s;font-family:inherit}
+input:focus,select:focus,textarea:focus{border-color:var(--accent)}
+select option{background:var(--bg3)}
+.form-group{margin-bottom:12px}
+.form-label{font-size:12px;color:var(--muted);margin-bottom:5px;display:block}
+.table{width:100%;border-collapse:collapse}
+.table th{text-align:left;padding:10px 12px;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border);white-space:nowrap}
+.table td{padding:10px 12px;border-bottom:1px solid rgba(42,42,62,.5);font-size:13px;vertical-align:middle}
+.table tr:hover td{background:rgba(108,99,255,.04)}
+.tag{display:inline-block;padding:2px 9px;border-radius:5px;font-size:11px;font-weight:600}
+.tag-purple{background:rgba(108,99,255,.2);color:#a09aff}
+.tag-green{background:rgba(0,217,180,.15);color:#00d9b4}
+.tag-red{background:rgba(255,71,87,.15);color:#ff6b7a}
+.tag-orange{background:rgba(255,165,2,.15);color:#ffb830}
+.tag-pink{background:rgba(255,107,157,.18);color:#ff85b5}
+.tag-blue{background:rgba(56,139,253,.15);color:#79b8ff}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px}
+.modal{background:var(--card);border:1px solid var(--border);border-radius:13px;padding:26px;width:100%;max-width:450px;max-height:90vh;overflow-y:auto}
+.modal-title{font-size:16px;font-weight:700;margin-bottom:18px;display:flex;justify-content:space-between;align-items:center}
+.close-btn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:20px;line-height:1;padding:0 2px}
+.close-btn:hover{color:var(--text)}
+.login-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:var(--bg);padding:20px}
+.login-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:34px;width:100%;max-width:370px;box-shadow:0 20px 60px rgba(0,0,0,.4)}
+.login-logo{font-size:32px;font-weight:900;background:linear-gradient(135deg,var(--accent),var(--accent2),var(--accent3));-webkit-background-clip:text;-webkit-text-fill-color:transparent;text-align:center;margin-bottom:4px;letter-spacing:-1px}
+.login-sub{text-align:center;color:var(--muted);font-size:13px;margin-bottom:26px}
+.role-switcher{display:flex;gap:8px;margin-bottom:20px}
+.role-btn{flex:1;padding:9px;border-radius:8px;border:1px solid var(--border);background:none;color:var(--muted);cursor:pointer;font-size:13px;transition:all .2s}
+.role-btn.active{border-color:var(--accent);background:rgba(108,99,255,.15);color:var(--accent);font-weight:600}
+.divider{height:1px;background:var(--border);margin:14px 0}
+.toast{position:fixed;bottom:22px;right:22px;background:var(--card);border:1px solid var(--border);border-radius:9px;padding:11px 18px;font-size:13px;z-index:500;animation:slideIn .3s ease;display:flex;align-items:center;gap:8px;box-shadow:0 8px 30px rgba(0,0,0,.3);max-width:320px}
+@keyframes slideIn{from{transform:translateX(120px);opacity:0}to{transform:translateX(0);opacity:1}}
+.cart-item{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid rgba(42,42,62,.6)}
+.cart-emoji{font-size:26px;width:44px;height:44px;background:var(--bg3);border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.qty-control{display:flex;align-items:center;gap:5px}
+.qty-btn{width:26px;height:26px;border-radius:6px;border:1px solid var(--border);background:var(--bg3);color:var(--text);cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;transition:border .2s}
+.qty-btn:hover{border-color:var(--accent);color:var(--accent)}
+.empty-state{text-align:center;padding:48px 20px;color:var(--muted)}
+.empty-icon{font-size:44px;margin-bottom:14px}
+.progress-bar{height:5px;background:var(--bg3);border-radius:3px;overflow:hidden;margin-top:5px}
+.progress-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .4s}
+.chart-col{display:flex;flex-direction:column;align-items:center;gap:5px}
+.chart-bar-fill{width:32px;background:linear-gradient(180deg,var(--accent),rgba(108,99,255,.3));border-radius:4px 4px 0 0;transition:height .6s}
+.chart-row{display:flex;align-items:flex-end;gap:8px;height:90px;padding:0 6px;border-bottom:1px solid var(--border);border-left:1px solid var(--border)}
+.chart-lbl{font-size:10px;color:var(--muted);width:32px;text-align:center}
+.search-bar{display:flex;gap:8px;margin-bottom:16px}
+.search-bar input{flex:1}
+.hint-box{background:var(--bg3);border-radius:8px;padding:10px 13px;font-size:12px;color:var(--muted);margin-bottom:14px;line-height:1.6}
+.order-steps{display:flex;margin-top:10px;margin-bottom:4px}
+.order-step{flex:1;text-align:center}
+.step-dot{width:11px;height:11px;border-radius:50%;margin:0 auto 4px;transition:background .3s}
+.step-lbl{font-size:10px}
+.action-row{display:flex;gap:6px}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+
+<!-- LOGIN -->
+<div id="loginScreen" class="login-wrap">
+  <div class="login-card">
+    <div class="login-logo">NEXUS</div>
+    <div class="login-sub">Premium E-Commerce Platform</div>
+    <div class="role-switcher">
+      <button class="role-btn active" onclick="setRole('user')" id="roleUserBtn">👤 Customer</button>
+      <button class="role-btn" onclick="setRole('admin')" id="roleAdminBtn">🛡️ Admin</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Email</label>
+      <input type="email" id="loginEmail" value="user@nexus.com">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Password</label>
+      <input type="password" id="loginPass" value="password123">
+    </div>
+    <div class="hint-box" id="loginHint">
+      👤 Customer — user@nexus.com / password123<br>
+      🛡️ Admin — admin@nexus.com / admin123
+    </div>
+    <button class="btn btn-primary btn-full" onclick="doLogin()" style="padding:10px">Sign In →</button>
+    <div style="text-align:center;font-size:12px;color:var(--muted);margin-top:14px">Demo credentials pre-filled above</div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="mainApp" style="display:none;flex-direction:column;min-height:100vh">
+  <header>
+    <div class="logo">NEXUS</div>
+    <nav class="nav">
+      <button class="nav-btn active" onclick="showSection('catalog')" id="nav-catalog"><i class="ti ti-layout-grid"></i> Shop</button>
+      <button class="nav-btn" onclick="showSection('orders')" id="nav-orders"><i class="ti ti-package"></i> My Orders</button>
+      <button class="nav-btn" onclick="showSection('cart')" id="nav-cart"><i class="ti ti-shopping-cart"></i> Cart<span class="badge" id="cartBadge">0</span></button>
+    </nav>
+    <div style="display:flex;align-items:center;gap:10px">
+      <span style="font-size:12px;color:var(--muted)" id="userLabel"></span>
+      <span id="roleBadge" class="tag"></span>
+      <button class="btn btn-outline btn-sm" onclick="doLogout()">Sign out</button>
+    </div>
+  </header>
+
+  <div class="main">
+    <div class="sidebar">
+      <div class="sidebar-section">Browse</div>
+      <button class="sidebar-item active" onclick="filterCat('all')" id="cat-all"><i class="ti ti-category"></i> All Products</button>
+      <button class="sidebar-item" onclick="filterCat('Electronics')" id="cat-Electronics"><i class="ti ti-device-laptop"></i> Electronics</button>
+      <button class="sidebar-item" onclick="filterCat('Clothing')" id="cat-Clothing"><i class="ti ti-shirt"></i> Clothing</button>
+      <button class="sidebar-item" onclick="filterCat('Books')" id="cat-Books"><i class="ti ti-book"></i> Books</button>
+      <button class="sidebar-item" onclick="filterCat('Home')" id="cat-Home"><i class="ti ti-home"></i> Home & Living</button>
+      <button class="sidebar-item" onclick="filterCat('Sports')" id="cat-Sports"><i class="ti ti-ball-football"></i> Sports</button>
+      <div id="adminSidebar" style="display:none">
+        <div class="divider"></div>
+        <div class="sidebar-section">Admin</div>
+        <button class="sidebar-item" onclick="showSection('dashboard')" id="sid-dashboard"><i class="ti ti-chart-bar"></i> Dashboard</button>
+        <button class="sidebar-item" onclick="showSection('adminProducts')" id="sid-adminProducts"><i class="ti ti-packages"></i> Products</button>
+        <button class="sidebar-item" onclick="showSection('adminOrders')" id="sid-adminOrders"><i class="ti ti-clipboard-list"></i> All Orders</button>
+        <button class="sidebar-item" onclick="showSection('users')" id="sid-users"><i class="ti ti-users"></i> Users</button>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- CATALOG -->
+      <div class="page active" id="page-catalog">
+        <div class="page-title"><i class="ti ti-layout-grid"></i> Product Catalog</div>
+        <div class="search-bar">
+          <input type="text" id="searchInput" placeholder="Search products..." oninput="renderCatalog()">
+          <select id="sortSelect" onchange="renderCatalog()" style="width:auto;min-width:140px">
+            <option value="default">Default</option>
+            <option value="price-asc">Price: Low → High</option>
+            <option value="price-desc">Price: High → Low</option>
+            <option value="name">Name A–Z</option>
+          </select>
+        </div>
+        <div class="grid-4" id="productGrid"></div>
+      </div>
+
+      <!-- CART -->
+      <div class="page" id="page-cart">
+        <div class="page-title"><i class="ti ti-shopping-cart"></i> Shopping Cart</div>
+        <div class="grid-2" style="gap:18px;align-items:start">
+          <div id="cartItems"></div>
+          <div class="card" id="orderSummary"></div>
+        </div>
+      </div>
+
+      <!-- MY ORDERS -->
+      <div class="page" id="page-orders">
+        <div class="page-title"><i class="ti ti-package"></i> My Orders</div>
+        <div id="myOrdersList"></div>
+      </div>
+
+      <!-- DASHBOARD -->
+      <div class="page" id="page-dashboard">
+        <div class="page-title"><i class="ti ti-chart-bar"></i> Admin Dashboard</div>
+        <div class="grid-4" id="dashStats" style="margin-bottom:18px"></div>
+        <div class="grid-2" style="gap:16px;margin-bottom:16px">
+          <div class="card">
+            <div style="font-weight:600;font-size:13px;margin-bottom:12px">Weekly Revenue</div>
+            <div class="chart-row" id="revenueChart"></div>
+            <div style="display:flex;gap:8px;margin-top:5px;justify-content:center" id="chartLabels"></div>
+          </div>
+          <div class="card">
+            <div style="font-weight:600;font-size:13px;margin-bottom:12px">Top Categories by Revenue</div>
+            <div id="topCats"></div>
+          </div>
+        </div>
+        <div class="card">
+          <div style="font-weight:600;font-size:13px;margin-bottom:12px">Recent Orders</div>
+          <div style="overflow-x:auto" id="recentOrdersTable"></div>
+        </div>
+      </div>
+
+      <!-- ADMIN PRODUCTS -->
+      <div class="page" id="page-adminProducts">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+          <div class="page-title" style="margin:0"><i class="ti ti-packages"></i> Manage Products</div>
+          <button class="btn btn-primary" onclick="openProductModal()"><i class="ti ti-plus"></i> Add Product</button>
+        </div>
+        <div style="overflow-x:auto" id="adminProductTable"></div>
+      </div>
+
+      <!-- ADMIN ORDERS -->
+      <div class="page" id="page-adminOrders">
+        <div class="page-title"><i class="ti ti-clipboard-list"></i> All Orders</div>
+        <div style="overflow-x:auto" id="allOrdersTable"></div>
+      </div>
+
+      <!-- USERS -->
+      <div class="page" id="page-users">
+        <div class="page-title"><i class="ti ti-users"></i> User Management</div>
+        <div style="overflow-x:auto" id="usersTable"></div>
+      </div>
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /mainApp -->
+
+<!-- MODAL: Add/Edit Product -->
+<div class="modal-overlay" id="productModal" style="display:none" onclick="handleOverlay(event,'productModal')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-title"><span id="productModalTitle">Add Product</span><button class="close-btn" onclick="closeModal('productModal')">✕</button></div>
+    <div class="form-group"><label class="form-label">Product Name</label><input id="pName" placeholder="e.g. Wireless Headphones"></div>
+    <div class="grid-2">
+      <div class="form-group"><label class="form-label">Price ($)</label><input id="pPrice" type="number" step="0.01" placeholder="29.99"></div>
+      <div class="form-group"><label class="form-label">Stock</label><input id="pStock" type="number" placeholder="100"></div>
+    </div>
+    <div class="form-group"><label class="form-label">Category</label>
+      <select id="pCat"><option>Electronics</option><option>Clothing</option><option>Books</option><option>Home</option><option>Sports</option></select>
+    </div>
+    <div class="form-group"><label class="form-label">Emoji Icon</label><input id="pEmoji" placeholder="📦" value="📦"></div>
+    <div class="form-group"><label class="form-label">Description</label><textarea id="pDesc" rows="2" style="resize:none" placeholder="Short description..."></textarea></div>
+    <div class="grid-2" style="gap:8px;margin-top:4px">
+      <button class="btn btn-primary btn-full" onclick="saveProduct()" id="saveProductBtn">Add Product</button>
+      <button class="btn btn-outline btn-full" onclick="closeModal('productModal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Checkout -->
+<div class="modal-overlay" id="checkoutModal" style="display:none" onclick="handleOverlay(event,'checkoutModal')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-title">Checkout <button class="close-btn" onclick="closeModal('checkoutModal')">✕</button></div>
+    <div style="font-size:13px;font-weight:600;margin-bottom:10px">Shipping Information</div>
+    <div class="form-group"><label class="form-label">Full Name</label><input id="chkName" value="John Doe"></div>
+    <div class="form-group"><label class="form-label">Address</label><input id="chkAddr" value="123 Main Street"></div>
+    <div class="grid-2">
+      <div class="form-group"><label class="form-label">City</label><input id="chkCity" value="San Francisco"></div>
+      <div class="form-group"><label class="form-label">ZIP</label><input id="chkZip" value="94102"></div>
+    </div>
+    <div class="divider"></div>
+    <div style="font-size:13px;font-weight:600;margin-bottom:10px">Payment Details</div>
+    <div class="form-group"><label class="form-label">Card Number</label><input id="chkCard" value="4242 4242 4242 4242"></div>
+    <div class="grid-2">
+      <div class="form-group"><label class="form-label">Expiry</label><input id="chkExp" value="12/26"></div>
+      <div class="form-group"><label class="form-label">CVV</label><input id="chkCvv" type="password" value="123"></div>
+    </div>
+    <div class="divider"></div>
+    <div id="chkSummary" style="margin-bottom:16px"></div>
+    <button class="btn btn-success btn-full" onclick="placeOrder()" style="padding:11px"><i class="ti ti-check"></i> Place Order</button>
+  </div>
+</div>
+
+<!-- MODAL: Order Detail -->
+<div class="modal-overlay" id="orderDetailModal" style="display:none" onclick="handleOverlay(event,'orderDetailModal')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-title">Order Details <button class="close-btn" onclick="closeModal('orderDetailModal')">✕</button></div>
+    <div id="orderDetailContent"></div>
+  </div>
+</div>
+
+<!-- MODAL: Update Status -->
+<div class="modal-overlay" id="updateStatusModal" style="display:none" onclick="handleOverlay(event,'updateStatusModal')">
+  <div class="modal" style="max-width:340px" onclick="event.stopPropagation()">
+    <div class="modal-title">Update Order Status <button class="close-btn" onclick="closeModal('updateStatusModal')">✕</button></div>
+    <div class="form-group">
+      <label class="form-label">New Status</label>
+      <select id="newStatusSelect">
+        <option value="Processing">Processing</option>
+        <option value="Shipped">Shipped</option>
+        <option value="Delivered">Delivered</option>
+        <option value="Cancelled">Cancelled</option>
+      </select>
+    </div>
+    <input type="hidden" id="statusOrderId">
+    <button class="btn btn-primary btn-full" onclick="confirmStatusUpdate()" style="margin-top:4px">Update Status</button>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toastEl" class="toast" style="display:none"></div>
+
+<script>
+/* ===== STATE ===== */
+var S = {
+  role: 'user',
+  currentUser: null,
+  section: 'catalog',
+  catFilter: 'all',
+  cart: [],
+  editingProductId: null,
+  nextOrderId: 5,
+  nextProductId: 13,
+  products: [
+    {id:1,name:'Wireless Headphones',price:89.99,stock:45,cat:'Electronics',emoji:'🎧',desc:'Premium audio with active noise cancellation and 30-hour battery life.'},
+    {id:2,name:'Smart Watch Pro',price:199.99,stock:12,cat:'Electronics',emoji:'⌚',desc:'Track health metrics, notifications, and GPS with always-on display.'},
+    {id:3,name:'Laptop Stand',price:34.99,stock:78,cat:'Electronics',emoji:'💻',desc:'Ergonomic aluminium laptop stand with adjustable height.'},
+    {id:4,name:'Bluetooth Speaker',price:49.99,stock:0,cat:'Electronics',emoji:'🔊',desc:'360° immersive sound with 12-hour battery and IPX5 water resistance.'},
+    {id:5,name:'Running Shoes',price:120.00,stock:30,cat:'Sports',emoji:'👟',desc:'Lightweight performance running shoes with responsive foam cushioning.'},
+    {id:6,name:'Yoga Mat',price:29.99,stock:60,cat:'Sports',emoji:'🧘',desc:'Non-slip 6mm premium yoga mat with carry strap.'},
+    {id:7,name:'Water Bottle',price:18.99,stock:100,cat:'Sports',emoji:'🍶',desc:'Insulated stainless steel 1L bottle, keeps cold 24h.'},
+    {id:8,name:'Cotton T-Shirt',price:19.99,stock:200,cat:'Clothing',emoji:'👕',desc:'Breathable everyday organic cotton tee, available in 8 colours.'},
+    {id:9,name:'Denim Jacket',price:79.99,stock:25,cat:'Clothing',emoji:'🧥',desc:'Classic slim-fit denim jacket with vintage wash finish.'},
+    {id:10,name:'Wool Beanie',price:14.99,stock:80,cat:'Clothing',emoji:'🧢',desc:'Soft merino wool beanie, one size fits all.'},
+    {id:11,name:'JavaScript: The Good Parts',price:44.99,stock:35,cat:'Books',emoji:'📖',desc:'Essential modern JavaScript patterns for every developer.'},
+    {id:12,name:'Design Thinking',price:24.99,stock:50,cat:'Books',emoji:'📚',desc:'User-centred design principles and hands-on methods.'},
+    {id:13,name:'Coffee Maker',price:59.99,stock:18,cat:'Home',emoji:'☕',desc:'12-cup programmable drip coffee maker with thermal carafe.'},
+    {id:14,name:'Scented Candles Set',price:14.99,stock:90,cat:'Home',emoji:'🕯️',desc:'Soy wax aromatherapy candles, pack of 3 — vanilla, lavender, cedar.'},
+  ],
+  orders: [
+    {id:'ORD-001',userId:'user@nexus.com',items:[{name:'Wireless Headphones',qty:1,price:89.99,emoji:'🎧'}],total:97.27,status:'Delivered',date:'2025-05-01',addr:'123 Main St, San Francisco'},
+    {id:'ORD-002',userId:'user@nexus.com',items:[{name:'Yoga Mat',qty:2,price:29.99,emoji:'🧘'},{name:'Running Shoes',qty:1,price:120,emoji:'👟'}],total:194.37,status:'Shipped',date:'2025-05-18',addr:'123 Main St, San Francisco'},
+    {id:'ORD-003',userId:'bob@nexus.com',items:[{name:'JavaScript: The Good Parts',qty:1,price:44.99,emoji:'📖'}],total:49.59,status:'Processing',date:'2025-05-22',addr:'456 Oak Ave, New York'},
+    {id:'ORD-004',userId:'alice@nexus.com',items:[{name:'Smart Watch Pro',qty:1,price:199.99,emoji:'⌚'},{name:'Laptop Stand',qty:1,price:34.99,emoji:'💻'}],total:253.78,status:'Processing',date:'2025-05-25',addr:'789 Pine Rd, Los Angeles'},
+  ],
+  users: [
+    {email:'user@nexus.com',name:'John Doe',role:'User',orders:2,joined:'2025-01-15'},
+    {email:'bob@nexus.com',name:'Bob Smith',role:'User',orders:1,joined:'2025-03-02'},
+    {email:'alice@nexus.com',name:'Alice Chen',role:'User',orders:1,joined:'2025-04-10'},
+    {email:'admin@nexus.com',name:'Admin User',role:'Admin',orders:0,joined:'2024-12-01'},
+  ]
+};
+
+/* ===== LOGIN ===== */
+function setRole(r) {
+  S.role = r;
+  document.getElementById('roleUserBtn').className = 'role-btn' + (r==='user' ? ' active' : '');
+  document.getElementById('roleAdminBtn').className = 'role-btn' + (r==='admin' ? ' active' : '');
+  document.getElementById('loginEmail').value = r==='admin' ? 'admin@nexus.com' : 'user@nexus.com';
+  document.getElementById('loginPass').value = r==='admin' ? 'admin123' : 'password123';
+}
+
+function doLogin() {
+  var em = document.getElementById('loginEmail').value.trim();
+  var pw = document.getElementById('loginPass').value;
+  var isAdmin = em==='admin@nexus.com' && pw==='admin123';
+  var isUser  = (em==='user@nexus.com' && pw==='password123') || em==='bob@nexus.com' || em==='alice@nexus.com';
+  if (!isAdmin && !isUser) { showToast('❌ Invalid credentials'); return; }
+  S.currentUser = em;
+  S.role = isAdmin ? 'admin' : 'user';
+  document.getElementById('loginScreen').style.display = 'none';
+  var ma = document.getElementById('mainApp');
+  ma.style.display = 'flex';
+  document.getElementById('userLabel').textContent = em.split('@')[0];
+  document.getElementById('roleBadge').textContent = S.role==='admin' ? 'Admin' : 'User';
+  document.getElementById('roleBadge').className = 'tag ' + (S.role==='admin' ? 'tag-pink' : 'tag-purple');
+  document.getElementById('adminSidebar').style.display = S.role==='admin' ? 'block' : 'none';
+  S.section = 'catalog'; S.catFilter = 'all';
+  renderCatalog();
+  updateCartBadge();
+  showToast('✅ Welcome, ' + em.split('@')[0] + '!');
+}
+
+function doLogout() {
+  S.currentUser = null; S.role = 'user'; S.cart = [];
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('mainApp').style.display = 'none';
+  document.getElementById('adminSidebar').style.display = 'none';
+  setRole('user');
+}
+
+/* ===== NAVIGATION ===== */
+function showSection(s) {
+  S.section = s;
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  var pg = document.getElementById('page-' + s);
+  if (pg) pg.classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  var nb = document.getElementById('nav-' + s);
+  if (nb) nb.classList.add('active');
+  document.querySelectorAll('.sidebar-item').forEach(b => b.classList.remove('active'));
+  var sb = document.getElementById('sid-' + s);
+  if (sb) sb.classList.add('active');
+  var renders = {catalog:renderCatalog, cart:renderCart, orders:renderMyOrders, dashboard:renderDashboard, adminProducts:renderAdminProducts, adminOrders:renderAllOrders, users:renderUsers};
+  if (renders[s]) renders[s]();
+}
+
+function filterCat(c) {
+  S.catFilter = c;
+  document.querySelectorAll('[id^="cat-"]').forEach(b => b.classList.remove('active'));
+  var el = document.getElementById('cat-' + c);
+  if (el) el.classList.add('active');
+  showSection('catalog');
+}
+
+/* ===== CATALOG ===== */
+function getFilteredProducts() {
+  var q = (document.getElementById('searchInput')||{value:''}).value.toLowerCase();
+  var sort = (document.getElementById('sortSelect')||{value:'default'}).value;
+  var list = S.products.filter(p => {
+    return (S.catFilter==='all' || p.cat===S.catFilter) &&
+           (!q || p.name.toLowerCase().includes(q) || p.cat.toLowerCase().includes(q) || p.desc.toLowerCase().includes(q));
+  });
+  if (sort==='price-asc') list.sort((a,b)=>a.price-b.price);
+  else if (sort==='price-desc') list.sort((a,b)=>b.price-a.price);
+  else if (sort==='name') list.sort((a,b)=>a.name.localeCompare(b.name));
+  return list;
+}
+
+function renderCatalog() {
+  var prods = getFilteredProducts();
+  var grid = document.getElementById('productGrid');
+  if (!grid) return;
+  if (!prods.length) {
+    grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">🔍</div><p>No products found</p></div>';
+    return;
+  }
+  grid.innerHTML = prods.map(p => {
+    var inCart = S.cart.find(c => c.id===p.id);
+    var stockHtml = p.stock>20 ? '<span class="tag tag-green">In Stock</span>' :
+                    p.stock>0  ? '<span class="tag tag-orange">Low: '+p.stock+' left</span>' :
+                                 '<span class="tag tag-red">Out of Stock</span>';
+    var btnHtml = p.stock>0
+      ? '<button class="btn btn-primary btn-sm" onclick="addToCart('+p.id+')">'+(inCart?'<i class="ti ti-check"></i> Added':'<i class="ti ti-plus"></i> Add')+'</button>'
+      : '<button class="btn btn-outline btn-sm" disabled style="opacity:.5;cursor:not-allowed">Unavailable</button>';
+    return '<div class="product-card"><div class="product-img">'+p.emoji+'</div><div class="product-info"><div class="product-cat">'+p.cat+'</div><div class="product-name">'+p.name+'</div><div class="product-stock">'+stockHtml+'</div><div style="display:flex;align-items:center;justify-content:space-between"><span style="color:var(--accent);font-weight:700;font-size:16px">$'+p.price.toFixed(2)+'</span>'+btnHtml+'</div></div></div>';
+  }).join('');
+}
+
+/* ===== CART ===== */
+function addToCart(id) {
+  var p = S.products.find(x=>x.id===id);
+  if (!p||p.stock===0) return;
+  var ci = S.cart.find(c=>c.id===id);
+  if (ci) ci.qty = Math.min(ci.qty+1, p.stock);
+  else S.cart.push({id:p.id, name:p.name, price:p.price, emoji:p.emoji, qty:1});
+  updateCartBadge(); renderCatalog();
+  showToast('🛒 '+p.name+' added to cart');
+}
+
+function updateCartBadge() {
+  document.getElementById('cartBadge').textContent = S.cart.reduce((a,c)=>a+c.qty, 0);
+}
+
+function renderCart() {
+  var el = document.getElementById('cartItems');
+  var sum = document.getElementById('orderSummary');
+  if (!el) return;
+  if (!S.cart.length) {
+    el.innerHTML = '<div class="empty-state"><div class="empty-icon">🛒</div><p>Your cart is empty</p><br><button class="btn btn-primary" onclick="showSection(\'catalog\')">Start Shopping</button></div>';
+    sum.innerHTML = '<div style="font-weight:600;margin-bottom:10px">Order Summary</div><div style="color:var(--muted);font-size:13px">No items yet</div>';
+    return;
+  }
+  var subtotal = S.cart.reduce((a,c)=>a+c.price*c.qty, 0);
+  var shipping = subtotal>=100 ? 0 : 9.99;
+  var tax = subtotal * 0.08;
+  var total = subtotal + shipping + tax;
+  el.innerHTML = S.cart.map(c =>
+    '<div class="cart-item"><div class="cart-emoji">'+c.emoji+'</div>'+
+    '<div style="flex:1;min-width:0"><div style="font-weight:500;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+c.name+'</div><div style="color:var(--muted);font-size:12px">$'+c.price.toFixed(2)+' each</div></div>'+
+    '<div class="qty-control"><button class="qty-btn" onclick="changeQty('+c.id+',-1)">−</button><span style="min-width:22px;text-align:center;font-size:13px">'+c.qty+'</span><button class="qty-btn" onclick="changeQty('+c.id+',1)">+</button></div>'+
+    '<span style="font-weight:600;min-width:62px;text-align:right;margin-left:8px">$'+(c.price*c.qty).toFixed(2)+'</span>'+
+    '<button onclick="removeFromCart('+c.id+')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;margin-left:8px;line-height:1" title="Remove">×</button></div>'
+  ).join('');
+  sum.innerHTML =
+    '<div style="font-weight:600;margin-bottom:14px">Order Summary</div>'+
+    '<div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:7px"><span style="color:var(--muted)">Subtotal ('+S.cart.reduce((a,c)=>a+c.qty,0)+' items)</span><span>$'+subtotal.toFixed(2)+'</span></div>'+
+    '<div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:7px"><span style="color:var(--muted)">Shipping</span><span>'+(shipping===0?'<span class="tag tag-green">Free</span>':'$'+shipping.toFixed(2))+'</span></div>'+
+    '<div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:14px"><span style="color:var(--muted)">Tax (8%)</span><span>$'+tax.toFixed(2)+'</span></div>'+
+    '<div class="divider"></div>'+
+    '<div style="display:flex;justify-content:space-between;font-weight:700;font-size:17px;margin:12px 0"><span>Total</span><span style="color:var(--accent)">$'+total.toFixed(2)+'</span></div>'+
+    (subtotal<100?'<div style="font-size:11px;color:var(--muted);margin-bottom:12px">Add $'+(100-subtotal).toFixed(2)+' more for free shipping!</div>':'')+
+    '<button class="btn btn-success btn-full" onclick="openCheckout()" style="padding:10px"><i class="ti ti-credit-card"></i> Proceed to Checkout</button>';
+}
+
+function changeQty(id, delta) {
+  var ci = S.cart.find(c=>c.id===id);
+  var prod = S.products.find(p=>p.id===id);
+  if (!ci) return;
+  ci.qty += delta;
+  if (ci.qty<=0) S.cart = S.cart.filter(c=>c.id!==id);
+  else if (prod && ci.qty>prod.stock) ci.qty = prod.stock;
+  updateCartBadge(); renderCart();
+}
+
+function removeFromCart(id) {
+  S.cart = S.cart.filter(c=>c.id!==id);
+  updateCartBadge(); renderCart();
+  showToast('🗑️ Item removed from cart');
+}
+
+function openCheckout() {
+  if (!S.cart.length) { showToast('❌ Cart is empty'); return; }
+  var subtotal = S.cart.reduce((a,c)=>a+c.price*c.qty, 0);
+  var shipping = subtotal>=100 ? 0 : 9.99;
+  var tax = subtotal*0.08;
+  document.getElementById('chkSummary').innerHTML =
+    '<div style="background:var(--bg3);border-radius:8px;padding:12px">'+
+    '<div style="font-weight:600;font-size:13px;margin-bottom:8px">Order Items</div>'+
+    S.cart.map(c=>'<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted);padding:3px 0">'+
+      '<span>'+c.emoji+' '+c.name+' ×'+c.qty+'</span><span>$'+(c.price*c.qty).toFixed(2)+'</span></div>').join('')+
+    '<div class="divider"></div>'+
+    '<div style="display:flex;justify-content:space-between;font-weight:700;font-size:14px">'+
+    '<span>Total</span><span style="color:var(--accent)">$'+(subtotal+shipping+tax).toFixed(2)+'</span></div></div>';
+  document.getElementById('checkoutModal').style.display = 'flex';
+}
+
+function placeOrder() {
+  var items = S.cart.map(c=>({name:c.name,qty:c.qty,price:c.price,emoji:c.emoji}));
+  var subtotal = S.cart.reduce((a,c)=>a+c.price*c.qty,0);
+  var tax = subtotal*0.08;
+  var shipping = subtotal>=100?0:9.99;
+  var order = {
+    id: 'ORD-00'+S.nextOrderId++,
+    userId: S.currentUser,
+    items: items,
+    total: +(subtotal+tax+shipping).toFixed(2),
+    status: 'Processing',
+    date: new Date().toISOString().split('T')[0],
+    addr: document.getElementById('chkAddr').value+', '+document.getElementById('chkCity').value
+  };
+  S.orders.push(order);
+  var u = S.users.find(x=>x.email===S.currentUser);
+  if (u) u.orders++;
+  S.cart = [];
+  updateCartBadge();
+  closeModal('checkoutModal');
+  showToast('✅ Order '+order.id+' placed successfully!');
+  showSection('orders');
+}
+
+/* ===== MY ORDERS ===== */
+function renderMyOrders() {
+  var el = document.getElementById('myOrdersList');
+  if (!el) return;
+  var myOrds = S.orders.filter(o=>o.userId===S.currentUser).slice().reverse();
+  if (!myOrds.length) {
+    el.innerHTML = '<div class="empty-state"><div class="empty-icon">📦</div><p>No orders yet</p><br><button class="btn btn-primary" onclick="showSection(\'catalog\')">Start Shopping</button></div>';
+    return;
+  }
+  var steps = ['Placed','Processing','Shipped','Delivered'];
+  el.innerHTML = myOrds.map(o => {
+    var si = o.status==='Cancelled' ? -1 : steps.indexOf(o.status);
+    var stepsHtml = o.status!=='Cancelled' ? '<div class="order-steps">'+steps.map((s,i)=>
+      '<div class="order-step"><div class="step-dot" style="background:'+(i<=si?'var(--accent)':'var(--border)')+'"></div><div class="step-lbl" style="color:'+(i<=si?'var(--accent)':'var(--muted)')+'">'+s+'</div></div>'
+    ).join('')+'</div>' : '';
+    return '<div class="card" style="margin-bottom:13px">'+
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">'+
+      '<div><span style="font-weight:600">'+o.id+'</span> <span style="font-size:12px;color:var(--muted);margin-left:6px">'+o.date+'</span></div>'+
+      '<div style="display:flex;gap:8px;align-items:center"><span class="tag '+statusTag(o.status)+'">'+o.status+'</span><button class="btn btn-outline btn-sm" onclick="viewOrderDetail(\''+o.id+'\')">Details</button></div></div>'+
+      '<div style="font-size:12px;color:var(--muted);margin-bottom:10px">'+o.items.map(i=>i.emoji+' '+i.name+' ×'+i.qty).join(' · ')+'</div>'+
+      stepsHtml+
+      '<div style="display:flex;justify-content:space-between;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">'+
+      '<span style="font-size:12px;color:var(--muted)">'+o.items.length+' item(s) · '+o.addr+'</span>'+
+      '<span style="font-weight:700;color:var(--accent)">$'+o.total.toFixed(2)+'</span></div></div>';
+  }).join('');
+}
+
+function viewOrderDetail(id) {
+  var o = S.orders.find(x=>x.id===id);
+  if (!o) return;
+  var steps = ['Placed','Processing','Shipped','Delivered'];
+  var si = o.status==='Cancelled' ? -1 : steps.indexOf(o.status);
+  document.getElementById('orderDetailContent').innerHTML =
+    '<div style="display:flex;justify-content:space-between;margin-bottom:12px"><div><div style="font-weight:700;font-size:15px">'+o.id+'</div><div style="font-size:12px;color:var(--muted);margin-top:2px">'+o.date+' · '+o.addr+'</div></div><span class="tag '+statusTag(o.status)+'">'+o.status+'</span></div>'+
+    '<div class="divider"></div>'+
+    '<div style="font-weight:600;font-size:13px;margin-bottom:8px">Items</div>'+
+    o.items.map(i=>'<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid rgba(42,42,62,.4);font-size:13px">'+
+      '<span>'+i.emoji+' '+i.name+' <span style="color:var(--muted)">×'+i.qty+'</span></span>'+
+      '<span style="font-weight:500">$'+(i.price*i.qty).toFixed(2)+'</span></div>').join('')+
+    '<div style="display:flex;justify-content:space-between;font-weight:700;font-size:14px;margin-top:12px;padding-top:10px;border-top:1px solid var(--border)"><span>Total</span><span style="color:var(--accent)">$'+o.total.toFixed(2)+'</span></div>'+
+    (o.status!=='Cancelled'?
+      '<div class="divider"></div><div style="font-weight:600;font-size:13px;margin-bottom:8px">Tracking</div>'+
+      '<div class="order-steps">'+steps.map((s,i)=>'<div class="order-step"><div class="step-dot" style="background:'+(i<=si?'var(--accent)':'var(--border)')+'"></div><div class="step-lbl" style="color:'+(i<=si?'var(--accent)':'var(--muted)')+'">'+s+'</div></div>').join('')+'</div>':'');
+  document.getElementById('orderDetailModal').style.display = 'flex';
+}
+
+/* ===== DASHBOARD ===== */
+function renderDashboard() {
+  var el = document.getElementById('dashStats');
+  if (!el) return;
+  var rev = S.orders.filter(o=>o.status!=='Cancelled').reduce((a,o)=>a+o.total, 0);
+  el.innerHTML = [
+    {lbl:'Total Revenue',val:'$'+rev.toFixed(0),up:'+12.5% this month',c:'var(--accent)'},
+    {lbl:'Total Orders',val:S.orders.length,up:S.orders.filter(o=>o.status==='Processing').length+' pending',c:'var(--accent2)'},
+    {lbl:'Products',val:S.products.length,up:S.products.filter(p=>p.stock===0).length+' out of stock',c:'var(--success)'},
+    {lbl:'Customers',val:S.users.filter(u=>u.role==='User').length,up:S.users.length+' total accounts',c:'var(--warning)'},
+  ].map(s=>'<div class="stat-card"><div class="stat-lbl">'+s.lbl+'</div><div class="stat-val" style="color:'+s.c+'">'+s.val+'</div><div class="stat-up">'+s.up+'</div></div>').join('');
+
+  var revenues = [4200,3800,5100,4700,6200,5800,7100];
+  var days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  var maxR = Math.max(...revenues);
+  document.getElementById('revenueChart').innerHTML = revenues.map(r=>'<div class="chart-col"><div class="chart-bar-fill" style="height:'+(r/maxR*80)+'px" title="$'+r+'"></div></div>').join('');
+  document.getElementById('chartLabels').innerHTML = days.map(d=>'<div class="chart-lbl">'+d+'</div>').join('');
+
+  var cats = {};
+  S.orders.forEach(o=>o.items.forEach(i=>{
+    var p = S.products.find(x=>x.name===i.name);
+    var c = p ? p.cat : 'Other';
+    cats[c] = (cats[c]||0) + i.qty*i.price;
+  }));
+  var catList = Object.entries(cats).sort((a,b)=>b[1]-a[1]);
+  var catMax = catList[0] ? catList[0][1] : 1;
+  document.getElementById('topCats').innerHTML = catList.map(([c,v])=>
+    '<div style="margin-bottom:11px"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span>'+c+'</span><span style="color:var(--accent);font-weight:600">$'+v.toFixed(0)+'</span></div><div class="progress-bar"><div class="progress-fill" style="width:'+(v/catMax*100)+'%"></div></div></div>'
+  ).join('');
+
+  document.getElementById('recentOrdersTable').innerHTML =
+    '<table class="table"><thead><tr><th>Order</th><th>Customer</th><th>Items</th><th>Total</th><th>Status</th><th>Action</th></tr></thead><tbody>'+
+    S.orders.slice(-5).reverse().map(o=>
+      '<tr><td style="font-weight:500">'+o.id+'</td>'+
+      '<td style="color:var(--muted)">'+o.userId.split('@')[0]+'</td>'+
+      '<td>'+o.items.map(i=>i.emoji).join('')+' ('+o.items.length+')</td>'+
+      '<td style="font-weight:600;color:var(--accent)">$'+o.total.toFixed(2)+'</td>'+
+      '<td><span class="tag '+statusTag(o.status)+'">'+o.status+'</span></td>'+
+      '<td><div class="action-row"><button class="btn btn-outline btn-sm" onclick="viewOrderDetail(\''+o.id+'\')">View</button><button class="btn btn-primary btn-sm" onclick="openStatusModal(\''+o.id+'\')">Update</button></div></td></tr>'
+    ).join('')+'</tbody></table>';
+}
+
+/* ===== ADMIN PRODUCTS ===== */
+function renderAdminProducts() {
+  var el = document.getElementById('adminProductTable');
+  if (!el) return;
+  el.innerHTML = '<table class="table"><thead><tr><th>Product</th><th>Category</th><th>Price</th><th>Stock</th><th>Status</th><th>Actions</th></tr></thead><tbody>'+
+    S.products.map(p=>
+      '<tr>'+
+      '<td><div style="display:flex;align-items:center;gap:9px"><span style="font-size:20px">'+p.emoji+'</span><div><div style="font-weight:500">'+p.name+'</div><div style="font-size:11px;color:var(--muted)">ID #'+p.id+'</div></div></div></td>'+
+      '<td><span class="tag tag-blue">'+p.cat+'</span></td>'+
+      '<td style="font-weight:600">$'+p.price.toFixed(2)+'</td>'+
+      '<td>'+p.stock+'</td>'+
+      '<td><span class="tag '+(p.stock>20?'tag-green':p.stock>0?'tag-orange':'tag-red')+'">'+(p.stock>20?'In Stock':p.stock>0?'Low Stock':'Out of Stock')+'</span></td>'+
+      '<td><div class="action-row"><button class="btn btn-outline btn-sm" onclick="editProduct('+p.id+')"><i class="ti ti-edit"></i> Edit</button><button class="btn btn-danger btn-sm" onclick="deleteProduct('+p.id+')"><i class="ti ti-trash"></i></button></div></td></tr>'
+    ).join('')+'</tbody></table>';
+}
+
+function openProductModal(id) {
+  S.editingProductId = id || null;
+  var p = id ? S.products.find(x=>x.id===id) : null;
+  document.getElementById('productModalTitle').textContent = p ? 'Edit Product' : 'Add Product';
+  document.getElementById('saveProductBtn').textContent = p ? 'Save Changes' : 'Add Product';
+  document.getElementById('pName').value  = p ? p.name  : '';
+  document.getElementById('pPrice').value = p ? p.price : '';
+  document.getElementById('pStock').value = p ? p.stock : '';
+  document.getElementById('pCat').value   = p ? p.cat   : 'Electronics';
+  document.getElementById('pEmoji').value = p ? p.emoji : '📦';
+  document.getElementById('pDesc').value  = p ? p.desc  : '';
+  document.getElementById('productModal').style.display = 'flex';
+}
+
+function editProduct(id) { openProductModal(id); }
+
+function saveProduct() {
+  var name  = document.getElementById('pName').value.trim();
+  var price = parseFloat(document.getElementById('pPrice').value);
+  var stock = parseInt(document.getElementById('pStock').value);
+  var cat   = document.getElementById('pCat').value;
+  var emoji = document.getElementById('pEmoji').value.trim() || '📦';
+  var desc  = document.getElementById('pDesc').value.trim();
+  if (!name || isNaN(price) || isNaN(stock)) { showToast('❌ Please fill all required fields'); return; }
+  if (S.editingProductId) {
+    var p = S.products.find(x=>x.id===S.editingProductId);
+    if (p) Object.assign(p, {name,price,stock,cat,emoji,desc});
+    showToast('✅ Product updated successfully');
+  } else {
+    S.products.push({id:S.nextProductId++, name, price, stock, cat, emoji, desc});
+    showToast('✅ Product added to catalog');
+  }
+  closeModal('productModal');
+  renderAdminProducts();
+  renderCatalog();
+}
+
+function deleteProduct(id) {
+  if (!confirm('Delete this product?')) return;
+  S.products = S.products.filter(p=>p.id!==id);
+  S.cart = S.cart.filter(c=>c.id!==id);
+  updateCartBadge();
+  renderAdminProducts(); renderCatalog();
+  showToast('🗑️ Product deleted');
+}
+
+/* ===== ADMIN ORDERS ===== */
+function renderAllOrders() {
+  var el = document.getElementById('allOrdersTable');
+  if (!el) return;
+  el.innerHTML = '<table class="table"><thead><tr><th>Order ID</th><th>Customer</th><th>Date</th><th>Items</th><th>Total</th><th>Status</th><th>Actions</th></tr></thead><tbody>'+
+    S.orders.slice().reverse().map(o=>
+      '<tr>'+
+      '<td style="font-weight:600">'+o.id+'</td>'+
+      '<td style="color:var(--muted)">'+o.userId+'</td>'+
+      '<td style="font-size:12px;color:var(--muted)">'+o.date+'</td>'+
+      '<td>'+o.items.map(i=>i.emoji).join(' ')+' ('+o.items.length+')</td>'+
+      '<td style="font-weight:600;color:var(--accent)">$'+o.total.toFixed(2)+'</td>'+
+      '<td><span class="tag '+statusTag(o.status)+'">'+o.status+'</span></td>'+
+      '<td><div class="action-row"><button class="btn btn-outline btn-sm" onclick="viewOrderDetail(\''+o.id+'\')">View</button><button class="btn btn-primary btn-sm" onclick="openStatusModal(\''+o.id+'\')">Update</button></div></td></tr>'
+    ).join('')+'</tbody></table>';
+}
+
+function openStatusModal(id) {
+  document.getElementById('statusOrderId').value = id;
+  var o = S.orders.find(x=>x.id===id);
+  if (o) document.getElementById('newStatusSelect').value = o.status;
+  document.getElementById('updateStatusModal').style.display = 'flex';
+}
+
+function confirmStatusUpdate() {
+  var id = document.getElementById('statusOrderId').value;
+  var status = document.getElementById('newStatusSelect').value;
+  var o = S.orders.find(x=>x.id===id);
+  if (o) { o.status = status; showToast('✅ '+id+' status → '+status); }
+  closeModal('updateStatusModal');
+  renderAllOrders(); renderDashboard();
+}
+
+/* ===== USERS ===== */
+function renderUsers() {
+  var el = document.getElementById('usersTable');
+  if (!el) return;
+  el.innerHTML = '<table class="table"><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Orders</th><th>Joined</th><th>Action</th></tr></thead><tbody>'+
+    S.users.map(u=>
+      '<tr>'+
+      '<td style="font-weight:500">'+u.name+'</td>'+
+      '<td style="color:var(--muted)">'+u.email+'</td>'+
+      '<td><span class="tag '+(u.role==='Admin'?'tag-pink':'tag-purple')+'">'+u.role+'</span></td>'+
+      '<td>'+u.orders+'</td>'+
+      '<td style="font-size:12px;color:var(--muted)">'+u.joined+'</td>'+
+      '<td><button class="btn btn-outline btn-sm" onclick="toggleRole(\''+u.email+'\')">Make '+(u.role==='Admin'?'User':'Admin')+'</button></td></tr>'
+    ).join('')+'</tbody></table>';
+}
+
+function toggleRole(email) {
+  var u = S.users.find(x=>x.email===email);
+  if (u) { u.role = u.role==='Admin' ? 'User' : 'Admin'; showToast('✅ '+u.name+' is now '+u.role); renderUsers(); }
+}
+
+/* ===== HELPERS ===== */
+function statusTag(s) {
+  return {Delivered:'tag-green',Shipped:'tag-purple',Processing:'tag-orange',Cancelled:'tag-red'}[s] || 'tag-orange';
+}
+
+function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+function handleOverlay(e, id) { if (e.target.id===id) closeModal(id); }
+
+var _toastTimer;
+function showToast(msg) {
+  var el = document.getElementById('toastEl');
+  el.textContent = msg;
+  el.style.display = 'flex';
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(()=>{ el.style.display='none'; }, 2800);
+}
+</script>
+</body>
+</html>
