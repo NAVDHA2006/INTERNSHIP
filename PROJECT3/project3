@@ -1,240 +1,612 @@
-# ==========================================
-# PROJECT 3 - CUSTOMER SEGMENTATION
-# DecodeLabs Data Science Project 3
-# ==========================================
+# ============================================
+# COMPLETE CUSTOMER SEGMENTATION PROJECT CODE (FIXED)
+# ============================================
 
+# Import necessary libraries
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
+from datetime import datetime
+import warnings
+warnings.filterwarnings('ignore')
 
-from sklearn.preprocessing import LabelEncoder, StandardScaler
+# Scikit-learn imports for preprocessing, dimensionality reduction, and clustering
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.compose import ColumnTransformer
 from sklearn.decomposition import PCA
 from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score
 
-# ==========================================
-# 1. LOAD DATA
-# ==========================================
+# Set visualization style
+sns.set_style("whitegrid")
+plt.rcParams['figure.figsize'] = (12, 8)
 
-file_path = "Dataset for Data Analytics.xlsx"
+# ============================================
+# PHASE 1: DATA LOADING & INITIAL EXPLORATION
+# ============================================
 
-df = pd.read_excel(file_path)
+print("="*60)
+print("PHASE 1: DATA LOADING & INITIAL EXPLORATION")
+print("="*60)
 
-print("Dataset Shape:", df.shape)
-print("\nFirst 5 Rows:")
+# Load the dataset
+df = pd.read_excel('Dataset for Data Analytics.xlsx')
+print(f"\nDataset Shape: {df.shape}")
+print(f"\nFirst 5 rows:")
 print(df.head())
 
-# ==========================================
-# 2. DATA CLEANING
-# ==========================================
+# Check data types and missing values
+print("\nData Types:")
+print(df.dtypes)
 
 print("\nMissing Values:")
 print(df.isnull().sum())
 
-# Fill missing values
-for col in df.columns:
-    if df[col].dtype == "object":
-        df[col] = df[col].fillna("Unknown")
-    else:
-        # Only fill numeric columns with median
-        if pd.api.types.is_numeric_dtype(df[col]):
-            df[col] = df[col].fillna(df[col].median())
-        else:
-            # For other non-numeric columns, use mode or 'Unknown'
-            if df[col].mode().empty:
-                df[col] = df[col].fillna("Unknown")
-            else:
-                df[col] = df[col].fillna(df[col].mode()[0])
+# Convert Date column to datetime
+df['Date'] = pd.to_datetime(df['Date'])
+print(f"\nDate Range: {df['Date'].min()} to {df['Date'].max()}")
 
-# Remove duplicates
-df.drop_duplicates(inplace=True)
+# Statistical summary of numeric columns
+print("\nStatistical Summary:")
+print(df.describe())
 
-print("\nShape After Cleaning:", df.shape)
+# ============================================
+# PHASE 1.1: FEATURE ENGINEERING
+# ============================================
 
-# ==========================================
-# 3. FEATURE ENGINEERING
-# ==========================================
+print("\n" + "="*60)
+print("PHASE 1.1: FEATURE ENGINEERING")
+print("="*60)
 
-# Convert dates if available
-date_cols = []
+# Create order-level features
+df['OrderMonth'] = df['Date'].dt.month
+df['OrderDayOfWeek'] = df['Date'].dt.dayofweek
+df['IsWeekend'] = (df['OrderDayOfWeek'] >= 5).astype(int)
+df['OrderYear'] = df['Date'].dt.year
 
-for col in df.columns:
-    if "date" in col.lower():
-        date_cols.append(col)
+# Reference date for recency calculation (max date + 1 day)
+reference_date = df['Date'].max() + pd.Timedelta(days=1)
 
-for col in date_cols:
-    df[col] = pd.to_datetime(df[col], errors='coerce')
+# ============================================
+# CUSTOMER-LEVEL AGGREGATION (RFM & BEHAVIORAL METRICS)
+# ============================================
 
-    df[col+"_Year"] = df[col].dt.year
-    df[col+"_Month"] = df[col].dt.month
-    df[col+"_Day"] = df[col].dt.day
+print("\nCreating Customer-Level Features...")
 
-# Drop original date columns
-df.drop(columns=date_cols, inplace=True, errors='ignore')
+customer_features = df.groupby('CustomerID').agg({
+    'Date': lambda x: (reference_date - x.max()).days,  # Recency
+    'OrderID': 'count',  # Frequency
+    'TotalPrice': ['sum', 'mean'],  # Monetary: Total and Average
+    'ItemsInCart': 'mean',  # Average Basket Size
+    'Quantity': 'sum',  # Total Quantity Purchased
+    'Product': lambda x: x.mode()[0] if len(x) > 0 else 'Unknown',  # Preferred Product
+    'PaymentMethod': lambda x: x.mode()[0] if len(x) > 0 else 'Unknown',  # Preferred Payment
+    'ReferralSource': lambda x: x.mode()[0] if len(x) > 0 else 'Unknown',  # Preferred Referral
+    'OrderStatus': lambda x: x.mode()[0] if len(x) > 0 else 'Unknown',  # Most Common Status
+    'CouponCode': lambda x: 'Used_Coupon' if (x != '').any() else 'No_Coupon'  # Coupon Usage Flag
+})
 
-# ==========================================
-# 4. ENCODE CATEGORICAL VARIABLES
-# ==========================================
+# Rename columns for clarity
+customer_features.columns = [
+    'Recency', 'Frequency', 'MonetaryValue', 'AvgOrderValue',
+    'AvgBasketSize', 'TotalQuantity', 'PreferredProduct',
+    'PreferredPayment', 'PreferredReferral', 'PreferredStatus',
+    'CouponUsage'
+]
 
-# Identify all object/string columns
-object_columns = df.select_dtypes(include=['object']).columns
-print(f"\nObject columns to encode: {list(object_columns)}")
+# Reset index to make CustomerID a column
+customer_features = customer_features.reset_index()
 
-# Encode each object column
-le = LabelEncoder()
-for col in object_columns:
-    df[col] = le.fit_transform(df[col].astype(str))
+print(f"\nCustomer Features Shape: {customer_features.shape}")
+print(f"\nFirst 5 customers:")
+print(customer_features.head())
 
-# Verify all columns are now numeric
-print("\nData types after encoding:")
-print(df.dtypes)
+# Check for any missing or infinite values
+print(f"\nMissing Values in Customer Features:")
+print(customer_features.isnull().sum())
 
-# Check for any remaining object columns
-remaining_object = df.select_dtypes(include=['object']).columns
-if len(remaining_object) > 0:
-    print(f"Warning: These columns are still objects: {list(remaining_object)}")
-else:
-    print("All columns successfully converted to numeric!")
+# Handle any missing values (if any)
+customer_features = customer_features.fillna({
+    'Recency': customer_features['Recency'].median(),
+    'Frequency': 1,
+    'MonetaryValue': customer_features['MonetaryValue'].median(),
+    'AvgOrderValue': customer_features['AvgOrderValue'].median(),
+    'AvgBasketSize': customer_features['AvgBasketSize'].median(),
+    'TotalQuantity': customer_features['TotalQuantity'].median()
+})
 
-# ==========================================
-# 5. SCALING
-# ==========================================
+# ============================================
+# PHASE 2: PREPROCESSING FOR CLUSTERING
+# ============================================
 
+print("\n" + "="*60)
+print("PHASE 2: PREPROCESSING FOR CLUSTERING")
+print("="*60)
+
+# Select features for clustering
+numeric_features = ['Recency', 'Frequency', 'MonetaryValue', 'AvgOrderValue', 'AvgBasketSize']
+categorical_features = ['PreferredProduct', 'PreferredPayment', 'PreferredReferral']
+
+# Separate data into numeric and categorical for preprocessing
+X_numeric = customer_features[numeric_features]
+X_categorical = customer_features[categorical_features]
+
+print(f"\nNumeric Features: {numeric_features}")
+print(f"Categorical Features: {categorical_features}")
+
+# Check value counts for categorical features
+print("\nPreferred Product Distribution:")
+print(X_categorical['PreferredProduct'].value_counts().head(10))
+
+print("\nPreferred Payment Distribution:")
+print(X_categorical['PreferredPayment'].value_counts())
+
+print("\nPreferred Referral Distribution:")
+print(X_categorical['PreferredReferral'].value_counts())
+
+# ============================================
+# HANDLING CATEGORICAL DATA (ONE-HOT ENCODING)
+# ============================================
+
+print("\nApplying One-Hot Encoding to Categorical Features...")
+
+# Apply one-hot encoding
+encoder = OneHotEncoder(sparse_output=False, handle_unknown='ignore')
+X_categorical_encoded = encoder.fit_transform(X_categorical)
+
+# Get feature names for the encoded columns
+categorical_feature_names = encoder.get_feature_names_out(categorical_features)
+
+# Create DataFrame for encoded features
+X_categorical_df = pd.DataFrame(
+    X_categorical_encoded,
+    columns=categorical_feature_names,
+    index=customer_features.index
+)
+
+print(f"\nOne-Hot Encoded Features Shape: {X_categorical_df.shape}")
+
+# ============================================
+# COMBINE NUMERIC AND ENCODED FEATURES
+# ============================================
+
+# Combine numeric and encoded categorical features
+X_combined = pd.concat([X_numeric, X_categorical_df], axis=1)
+
+print(f"\nCombined Features Shape: {X_combined.shape}")
+
+# Check for constant columns (might cause issues in scaling)
+constant_cols = [col for col in X_combined.columns if X_combined[col].nunique() == 1]
+print(f"\nConstant Columns to Drop: {constant_cols}")
+
+if constant_cols:
+    X_combined = X_combined.drop(columns=constant_cols)
+
+# ============================================
+# STANDARDIZATION (THE SCALABILITY FIX)
+# ============================================
+
+print("\nApplying StandardScaler to All Features...")
+
+# Initialize StandardScaler
 scaler = StandardScaler()
 
-scaled_data = scaler.fit_transform(df)
+# Fit and transform the data
+X_scaled = scaler.fit_transform(X_combined)
 
-print("\nData Scaling Completed")
-
-# ==========================================
-# 6. PCA
-# ==========================================
-
-pca = PCA(n_components=2)
-
-pca_data = pca.fit_transform(scaled_data)
-
-pca_df = pd.DataFrame(
-    pca_data,
-    columns=["PCA1", "PCA2"]
+# Create DataFrame for scaled data
+X_scaled_df = pd.DataFrame(
+    X_scaled,
+    columns=X_combined.columns,
+    index=customer_features.index
 )
 
-print("\nExplained Variance Ratio:")
-print(pca.explained_variance_ratio_)
+print(f"\nScaled Features Shape: {X_scaled_df.shape}")
+print(f"\nScaled Data Statistics (Mean ≈ 0, Std ≈ 1):")
+print(pd.DataFrame(X_scaled_df).describe().round(2))
 
-# ==========================================
-# 7. ELBOW METHOD
-# ==========================================
+# ============================================
+# PHASE 3: DIMENSIONALITY REDUCTION WITH PCA
+# ============================================
 
-wcss = []
+print("\n" + "="*60)
+print("PHASE 3: DIMENSIONALITY REDUCTION WITH PCA")
+print("="*60)
 
-for i in range(2, 11):
-    km = KMeans(
-        n_clusters=i,
-        random_state=42,
-        n_init=10
-    )
+# Initialize PCA
+pca = PCA()
 
-    km.fit(pca_data)
-    wcss.append(km.inertia_)
+# Fit PCA on the scaled data
+pca_result = pca.fit_transform(X_scaled_df)
 
-plt.figure(figsize=(8,5))
-plt.plot(range(2,11), wcss, marker='o')
-plt.title("Elbow Method")
-plt.xlabel("Number of Clusters")
-plt.ylabel("WCSS")
-plt.grid(True)
+# Calculate explained variance
+explained_variance_ratio = pca.explained_variance_ratio_
+cumulative_variance_ratio = np.cumsum(explained_variance_ratio)
+
+# Find number of components for 95% variance
+n_components_95 = np.argmax(cumulative_variance_ratio >= 0.95) + 1
+print(f"\nNumber of components needed for 95% variance: {n_components_95}")
+
+# ============================================
+# VISUALIZE PCA EXPLAINED VARIANCE
+# ============================================
+
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
+
+# Individual explained variance
+ax1.bar(range(1, len(explained_variance_ratio) + 1), explained_variance_ratio)
+ax1.set_xlabel('Principal Component')
+ax1.set_ylabel('Explained Variance Ratio')
+ax1.set_title('Individual Explained Variance')
+ax1.axhline(y=0.05, color='r', linestyle='--', label='5% Threshold')
+ax1.legend()
+
+# Cumulative explained variance
+ax2.plot(range(1, len(cumulative_variance_ratio) + 1), cumulative_variance_ratio, 'b-o')
+ax2.set_xlabel('Number of Principal Components')
+ax2.set_ylabel('Cumulative Explained Variance')
+ax2.set_title('Cumulative Explained Variance')
+ax2.axhline(y=0.95, color='r', linestyle='--', label='95% Threshold')
+ax2.axvline(x=n_components_95, color='g', linestyle='--', label=f'K = {n_components_95}')
+ax2.legend()
+ax2.grid(True)
+
+plt.tight_layout()
 plt.show()
 
-# ==========================================
-# 8. SILHOUETTE SCORE
-# ==========================================
+print(f"\nExplained Variance for First 10 Components:")
+for i in range(min(10, len(explained_variance_ratio))):
+    print(f"PC{i+1}: {explained_variance_ratio[i]:.4f}")
 
-best_score = -1
-best_k = 2
+print(f"\nCumulative Variance at {n_components_95} Components: {cumulative_variance_ratio[n_components_95-1]:.4f}")
 
-for k in range(2,11):
+# ============================================
+# REDUCE DATA TO OPTIMAL COMPONENTS
+# ============================================
 
-    model = KMeans(
-        n_clusters=k,
-        random_state=42,
-        n_init=10
-    )
+# Reduce data to n_components_95 components
+pca_reduced = PCA(n_components=n_components_95)
+X_pca = pca_reduced.fit_transform(X_scaled_df)
 
-    labels = model.fit_predict(pca_data)
+print(f"\nReduced Data Shape: {X_pca.shape}")
 
-    score = silhouette_score(
-        pca_data,
-        labels
-    )
+# ============================================
+# PHASE 4: K-MEANS CLUSTERING & DETERMINING OPTIMAL K
+# ============================================
 
-    print(f"K={k}  Silhouette Score={score:.4f}")
+print("\n" + "="*60)
+print("PHASE 4: K-MEANS CLUSTERING & DETERMINING OPTIMAL K")
+print("="*60)
 
-    if score > best_score:
-        best_score = score
-        best_k = k
+# ============================================
+# ELBOW METHOD
+# ============================================
 
-print("\nBest K:", best_k)
-print("Best Silhouette Score:", best_score)
+print("\nRunning Elbow Method...")
 
-# ==========================================
-# 9. FINAL KMEANS MODEL
-# ==========================================
+# Try different K values
+k_range = range(1, 15)
+inertia_scores = []
+silhouette_scores = []
 
-kmeans = KMeans(
-    n_clusters=best_k,
-    random_state=42,
-    n_init=10
-)
+for k in k_range:
+    kmeans = KMeans(n_clusters=k, random_state=42, n_init=10)
+    kmeans.fit(X_pca)
+    inertia_scores.append(kmeans.inertia_)
+    
+    # Calculate silhouette score (only for k >= 2)
+    if k >= 2:
+        silhouette_avg = silhouette_score(X_pca, kmeans.labels_)
+        silhouette_scores.append(silhouette_avg)
+    else:
+        silhouette_scores.append(None)
 
-clusters = kmeans.fit_predict(pca_data)
+print("\nInertia and Silhouette Scores:")
+for k in k_range:
+    if silhouette_scores[k-1] is not None:
+        print(f"K = {k}: Inertia = {inertia_scores[k-1]:.2f}, Silhouette = {silhouette_scores[k-1]:.4f}")
+    else:
+        print(f"K = {k}: Inertia = {inertia_scores[k-1]:.2f}")
 
-pca_df["Cluster"] = clusters
+# ============================================
+# VISUALIZE ELBOW AND SILHOUETTE SCORES
+# ============================================
 
-df["Cluster"] = clusters
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
 
-# ==========================================
-# 10. VISUALIZATION
-# ==========================================
+# Elbow Plot
+ax1.plot(k_range, inertia_scores, 'b-o')
+ax1.set_xlabel('Number of Clusters (K)')
+ax1.set_ylabel('Inertia (WCSS)')
+ax1.set_title('Elbow Method for Optimal K')
+ax1.grid(True)
 
-plt.figure(figsize=(10,6))
+# Annotate potential elbow points
+for k in [3, 4, 5]:
+    ax1.annotate(f'K={k}', xy=(k, inertia_scores[k-1]), 
+                xytext=(k+0.5, inertia_scores[k-1]),
+                arrowprops=dict(arrowstyle='->', color='red'))
 
-sns.scatterplot(
-    x="PCA1",
-    y="PCA2",
-    hue="Cluster",
-    palette="Set1",
-    data=pca_df
-)
+# Silhouette Plot
+silhouette_k = [k for k in k_range if k >= 2]
+ax2.plot(silhouette_k, [s for s in silhouette_scores if s is not None], 'r-o')
+ax2.set_xlabel('Number of Clusters (K)')
+ax2.set_ylabel('Silhouette Score')
+ax2.set_title('Silhouette Score for Optimal K')
+ax2.grid(True)
 
-plt.title("Customer Segmentation using K-Means")
+# Highlight best silhouette score
+best_k = silhouette_k[np.argmax([s for s in silhouette_scores if s is not None])]
+best_score = max([s for s in silhouette_scores if s is not None])
+ax2.annotate(f'K={best_k}\nScore={best_score:.3f}', 
+            xy=(best_k, best_score), 
+            xytext=(best_k+0.5, best_score),
+            arrowprops=dict(arrowstyle='->', color='green'))
+
+plt.tight_layout()
 plt.show()
 
-# ==========================================
-# 11. CUSTOMER PERSONAS
-# ==========================================
+# Determine optimal K
+optimal_k = best_k  # Based on silhouette score
+print(f"\nOptimal K based on Silhouette Score: {optimal_k}")
 
-print("\n============================")
-print("CUSTOMER PERSONAS")
-print("============================")
+# ============================================
+# FINAL K-MEANS MODEL WITH OPTIMAL K
+# ============================================
 
-cluster_summary = df.groupby("Cluster").mean(numeric_only=True)
+print(f"\nTraining Final K-Means Model with K = {optimal_k}...")
 
-print(cluster_summary)
+# Train final model
+final_kmeans = KMeans(n_clusters=optimal_k, random_state=42, n_init=10)
+cluster_labels = final_kmeans.fit_predict(X_pca)
 
-# ==========================================
-# 12. SAVE RESULTS
-# ==========================================
+# Add cluster labels to customer features
+customer_features['Cluster'] = cluster_labels
 
-df.to_excel(
-    "Customer_Segmentation_Output.xlsx",
-    index=False
+print(f"\nCluster Distribution:")
+print(customer_features['Cluster'].value_counts().sort_index())
+
+# ============================================
+# PHASE 5: REVERSE-ENGINEERING & PERSONA CREATION
+# ============================================
+
+print("\n" + "="*60)
+print("PHASE 5: REVERSE-ENGINEERING & PERSONA CREATION")
+print("="*60)
+
+# ============================================
+# VISUALIZE CLUSTERS IN PCA SPACE
+# ============================================
+
+# For 2D visualization (first 2 principal components)
+fig, axes = plt.subplots(1, 2, figsize=(16, 6))
+
+# 2D Scatter Plot
+if X_pca.shape[1] >= 2:
+    scatter = axes[0].scatter(X_pca[:, 0], X_pca[:, 1], 
+                            c=cluster_labels, cmap='viridis', alpha=0.6)
+    axes[0].set_xlabel('Principal Component 1')
+    axes[0].set_ylabel('Principal Component 2')
+    axes[0].set_title(f'Customer Segments (K={optimal_k}) in PCA Space')
+    axes[0].legend(*scatter.legend_elements(), title='Clusters')
+    axes[0].grid(True)
+
+# 3D Scatter Plot (if we have at least 3 components)
+if X_pca.shape[1] >= 3:
+    from mpl_toolkits.mplot3d import Axes3D
+    ax3d = axes[1] if X_pca.shape[1] >= 3 else None
+    
+    if X_pca.shape[1] >= 3:
+        ax3d = fig.add_subplot(1, 2, 2, projection='3d')
+        scatter3d = ax3d.scatter(X_pca[:, 0], X_pca[:, 1], X_pca[:, 2],
+                                c=cluster_labels, cmap='viridis', alpha=0.6)
+        ax3d.set_xlabel('PC1')
+        ax3d.set_ylabel('PC2')
+        ax3d.set_zlabel('PC3')
+        ax3d.set_title(f'3D Customer Segments (K={optimal_k})')
+        
+        # Remove the existing subplot if we're using the second axis
+        if X_pca.shape[1] >= 3 and axes[1]:
+            axes[1].remove()
+
+plt.tight_layout()
+plt.show()
+
+# ============================================
+# REVERSE TRANSFORM CENTROIDS TO ORIGINAL SCALE
+# ============================================
+
+print("\nReverse Transforming Centroids to Original Feature Space...")
+
+# Get centroids in PCA space
+centroids_pca = final_kmeans.cluster_centers_
+
+# Inverse transform to scaled feature space
+centroids_scaled = pca_reduced.inverse_transform(centroids_pca)
+
+# Inverse transform to original feature space
+centroids_original = scaler.inverse_transform(centroids_scaled)
+
+# Create DataFrame for centroids
+centroid_df = pd.DataFrame(
+    centroids_original,
+    columns=X_combined.columns,
+    index=[f'Cluster_{i}' for i in range(optimal_k)]
 )
 
-print("\nResults Saved Successfully")
-print("File Name: Customer_Segmentation_Output.xlsx")
+print("\nCluster Centroids (Original Scale):")
+print(centroid_df.round(2))
 
-# ==========================================
-# END OF PROJECT
-# ==========================================
+# ============================================
+# CLUSTER ANALYSIS AND PERSONA CREATION (FIXED)
+# ============================================
+
+print("\n" + "="*60)
+print("PERSONA CREATION")
+print("="*60)
+
+# Create a function to analyze clusters
+def analyze_cluster(cluster_id, centroids_df, customer_df):
+    """Analyze a cluster and create a persona description"""
+    
+    cluster_data = customer_df[customer_df['Cluster'] == cluster_id]
+    
+    # Get key metrics from centroid (renamed variable to avoid confusion)
+    centroid_values = centroids_df.loc[f'Cluster_{cluster_id}']
+    
+    # Extract specific metrics with clear variable names
+    freq = centroid_values['Frequency']  # Changed from 'frequency'
+    monetary = centroid_values['MonetaryValue']
+    avg_order = centroid_values['AvgOrderValue']
+    recency_val = centroid_values['Recency']  # Changed from 'recency'
+    basket = centroid_values['AvgBasketSize']
+    
+    # Determine product preferences
+    products = cluster_data['PreferredProduct'].value_counts()
+    top_products = products.head(3).index.tolist() if not products.empty else ['Various']
+    
+    # Determine referral source preference
+    referrals = cluster_data['PreferredReferral'].value_counts()
+    top_referral = referrals.index[0] if not referrals.empty else 'Unknown'
+    
+    # Create persona profile
+    persona = {}
+    
+    # Persona naming based on key characteristics
+    if monetary > 2000 and avg_order > 500:
+        persona['name'] = 'Elite Spenders'
+        persona['description'] = 'High-value customers who make premium purchases'
+        persona['strategy'] = 'VIP loyalty programs, exclusive previews, personalized service'
+    elif freq > 15 and monetary > 1500:  # Fixed variable name
+        persona['name'] = 'Power Shoppers'
+        persona['description'] = 'Frequent buyers with significant overall spending'
+        persona['strategy'] = 'Cross-selling, bulk discounts, subscription models'
+    elif freq > 10 and avg_order < 100:  # Fixed variable name
+        persona['name'] = 'Bargain Hunters'
+        persona['description'] = 'Regular customers focused on value purchases'
+        persona['strategy'] = 'Coupon campaigns, flash sales, loyalty points'
+    elif recency_val < 30 and freq < 5:  # Fixed variable names
+        persona['name'] = 'New Explorers'
+        persona['description'] = 'Recent customers with high potential for growth'
+        persona['strategy'] = 'Welcome emails, first-purchase discounts, onboarding campaigns'
+    elif recency_val > 180:  # Fixed variable name
+        persona['name'] = 'Lapsed Customers'
+        persona['description'] = 'Previously active customers who have not returned'
+        persona['strategy'] = 'Re-engagement campaigns, win-back offers'
+    else:
+        persona['name'] = 'Regular Customers'
+        persona['description'] = 'Consistent, middle-of-the-road customers'
+        persona['strategy'] = 'Maintain satisfaction, nurture brand loyalty'
+    
+    persona['size'] = len(cluster_data)
+    persona['percentage'] = (len(cluster_data) / len(customer_df)) * 100
+    persona['avg_frequency'] = freq
+    persona['avg_monetary'] = monetary
+    persona['avg_order'] = avg_order
+    persona['avg_recency'] = recency_val
+    persona['avg_basket'] = basket
+    persona['top_products'] = top_products
+    persona['top_referral'] = top_referral
+    
+    return persona
+
+# Create personas for each cluster
+personas = {}
+for cluster_id in range(optimal_k):
+    personas[cluster_id] = analyze_cluster(cluster_id, centroid_df, customer_features)
+
+# Display Personas
+print("\n" + "="*60)
+print("CUSTOMER SEGMENT PERSONAS")
+print("="*60)
+
+for cluster_id, persona in personas.items():
+    print(f"\n{'='*50}")
+    print(f"Cluster {cluster_id}: {persona['name']}")
+    print(f"{'='*50}")
+    print(f"Size: {persona['size']} customers ({persona['percentage']:.1f}%)")
+    print(f"Description: {persona['description']}")
+    print(f"\nBehavioral Metrics:")
+    print(f"  • Average Frequency: {persona['avg_frequency']:.1f} orders")
+    print(f"  • Average Monetary Value: ${persona['avg_monetary']:.2f}")
+    print(f"  • Average Order Value: ${persona['avg_order']:.2f}")
+    print(f"  • Average Recency: {persona['avg_recency']:.0f} days")
+    print(f"  • Average Basket Size: {persona['avg_basket']:.1f} items")
+    print(f"\nTop Products: {', '.join(persona['top_products'])}")
+    print(f"Top Referral Source: {persona['top_referral']}")
+    print(f"\nRecommended Strategy: {persona['strategy']}")
+
+# ============================================
+# PERSONA MATRIX SUMMARY TABLE
+# ============================================
+
+print("\n" + "="*60)
+print("PERSONA MATRIX SUMMARY")
+print("="*60)
+
+# Create a summary DataFrame
+summary_data = []
+for cluster_id, persona in personas.items():
+    summary_data.append({
+        'Cluster': cluster_id,
+        'Persona': persona['name'],
+        'Size': persona['size'],
+        'Percentage': f"{persona['percentage']:.1f}%",
+        'Avg Frequency': f"{persona['avg_frequency']:.1f}",
+        'Avg Monetary': f"${persona['avg_monetary']:.2f}",
+        'Avg Order Value': f"${persona['avg_order']:.2f}",
+        'Avg Recency': f"{persona['avg_recency']:.0f} days",
+        'Strategy': persona['strategy'][:50] + "..." if len(persona['strategy']) > 50 else persona['strategy']
+    })
+
+persona_matrix = pd.DataFrame(summary_data)
+persona_matrix = persona_matrix.sort_values('Cluster')
+
+print("\nPersona Matrix:")
+print(persona_matrix.to_string(index=False))
+
+# ============================================
+# SAVE RESULTS
+# ============================================
+
+print("\n" + "="*60)
+print("SAVING RESULTS")
+print("="*60)
+
+# Save customer features with clusters
+customer_features.to_csv('customer_segments.csv', index=False)
+print("\nSaved customer_segments.csv with cluster assignments")
+
+# Save persona matrix
+persona_matrix.to_csv('persona_matrix.csv', index=False)
+print("Saved persona_matrix.csv")
+
+# Save centroid details
+centroid_df.to_csv('cluster_centroids.csv')
+print("Saved cluster_centroids.csv")
+
+# Print feature importance for each cluster
+print("\n" + "="*60)
+print("FEATURE IMPORTANCE PER CLUSTER")
+print("="*60)
+
+# Calculate cluster centers in original scale and compare to overall mean
+overall_mean = customer_features[numeric_features].mean()
+
+for cluster_id in range(optimal_k):
+    cluster_centroid = centroid_df.loc[f'Cluster_{cluster_id}']
+    
+    print(f"\nCluster {cluster_id} - {personas[cluster_id]['name']}:")
+    print("Features that are significantly different from average:")
+    
+    for feature in numeric_features:
+        if feature in cluster_centroid.index:
+            diff = cluster_centroid[feature] - overall_mean[feature]
+            if abs(diff) > overall_mean[feature] * 0.3:  # 30% difference threshold
+                direction = "↑ High" if diff > 0 else "↓ Low"
+                print(f"  • {feature}: {direction} ({diff:.2f})")
+
+print("\n" + "="*60)
+print("PROJECT COMPLETED SUCCESSFULLY!")
+print("="*60)
