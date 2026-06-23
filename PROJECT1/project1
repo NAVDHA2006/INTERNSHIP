@@ -1,0 +1,126 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+# ==========================================
+# LOAD DATA
+# ==========================================
+df = pd.read_excel("Dataset for Data Analytics.xlsx")
+
+print("Dataset Shape:", df.shape)
+print("\nMissing Values:")
+print(df.isnull().sum())
+
+# ==========================================
+# HANDLE MISSING VALUES
+# ==========================================
+
+# CouponCode is categorical
+df["CouponCode"] = df["CouponCode"].fillna("NoCoupon")
+
+# ==========================================
+# OUTLIER DETECTION USING IQR
+# ==========================================
+
+Q1 = df["TotalPrice"].quantile(0.25)
+Q3 = df["TotalPrice"].quantile(0.75)
+IQR = Q3 - Q1
+
+lower = Q1 - 1.5 * IQR
+upper = Q3 + 1.5 * IQR
+
+outliers = df[
+    (df["TotalPrice"] < lower) |
+    (df["TotalPrice"] > upper)
+]
+
+print("\nNumber of Outliers:", len(outliers))
+
+# Cap Outliers
+df["TotalPrice"] = np.where(
+    df["TotalPrice"] > upper,
+    upper,
+    np.where(
+        df["TotalPrice"] < lower,
+        lower,
+        df["TotalPrice"]
+    )
+)
+
+# ==========================================
+# FEATURE ENGINEERING
+# ==========================================
+
+# Feature 1
+df["Year"] = df["Date"].dt.year
+
+# Feature 2
+df["Month"] = df["Date"].dt.month
+
+# Feature 3
+df["DiscountUsed"] = np.where(
+    df["CouponCode"] == "NoCoupon",
+    0,
+    1
+)
+
+# Feature 4
+df["AvgPricePerItem"] = (
+    df["TotalPrice"] / df["Quantity"]
+)
+
+# Feature 5
+df["CartEfficiency"] = (
+    df["Quantity"] / df["ItemsInCart"]
+)
+
+# ==========================================
+# BASIC EDA
+# ==========================================
+
+print("\nSummary Statistics")
+print(df.describe())
+
+print("\nTop Products")
+print(df["Product"].value_counts())
+
+print("\nOrder Status")
+print(df["OrderStatus"].value_counts())
+
+print("\nPayment Methods")
+print(df["PaymentMethod"].value_counts())
+
+# ==========================================
+# VISUALIZATIONS
+# ==========================================
+
+plt.figure(figsize=(8,5))
+df["Product"].value_counts().plot(kind="bar")
+plt.title("Product Sales Count")
+plt.tight_layout()
+plt.show()
+
+plt.figure(figsize=(8,5))
+df["PaymentMethod"].value_counts().plot(kind="bar")
+plt.title("Payment Method Distribution")
+plt.tight_layout()
+plt.show()
+
+plt.figure(figsize=(8,5))
+plt.hist(df["TotalPrice"], bins=20)
+plt.title("Total Price Distribution")
+plt.xlabel("Total Price")
+plt.ylabel("Frequency")
+plt.tight_layout()
+plt.show()
+
+# ==========================================
+# SAVE CLEANED DATASET
+# ==========================================
+
+df.to_csv(
+    "cleaned_dataset.csv",
+    index=False
+)
+
+print("\nCleaned dataset saved successfully!")
